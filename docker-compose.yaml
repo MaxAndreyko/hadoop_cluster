@@ -7,9 +7,7 @@ services:
     networks:
       mynet:
         ipv4_address: 192.168.1.10
-    build:
-      context: .
-      dockerfile: Dockerfile
+    tty: true
 
   ubuntu2:
     image: ubuntu:22.04
@@ -17,9 +15,7 @@ services:
     networks:
       mynet:
         ipv4_address: 192.168.1.11
-    build:
-      context: .
-      dockerfile: Dockerfile
+    tty: true
 
   ubuntu3:
     image: ubuntu:22.04
@@ -27,9 +23,7 @@ services:
     networks:
       mynet:
         ipv4_address: 192.168.1.12
-    build:
-      context: .
-      dockerfile: Dockerfile
+    tty: true
 
 networks:
   mynet:
