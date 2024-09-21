@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  ubuntu1:
+    image: ubuntu:22.04
+    container_name: hadoop_master
+    networks:
+      mynet:
+        ipv4_address: 192.168.1.10
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+  ubuntu2:
+    image: ubuntu:22.04
+    container_name: hadoop_worker_1
+    networks:
+      mynet:
+        ipv4_address: 192.168.1.11
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+  ubuntu3:
+    image: ubuntu:22.04
+    container_name: hadoop_worker_2
+    networks:
+      mynet:
+        ipv4_address: 192.168.1.12
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+networks:
+  mynet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
