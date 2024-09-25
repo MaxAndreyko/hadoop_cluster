@@ -4,12 +4,13 @@
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
 
+SSH_PUB="$HOME/.ssh/id_rsa.pub"
+
 # Генерируем SSH-ключ без секретной фразы и комментариев в папку ~/.ssh/
 echo "Генерация SSH-ключа ..."
-ssh-keygen -t rsa -C "" -N ""
+ssh-keygen -t rsa -f $SSH_PUB -C "" -N ""
 
 # Добавляем публичный ключ в файл с авторизированными ключами
-SSH_PUB="$HOME/.ssh/id_rsa.pub"
 SSH_AUTH_KEYS="$HOME/.ssh/authorized_keys"
 echo "Добавление публичного SSH-ключа к авторизированным ключам ..."
 cat $SSH_PUB > $SSH_AUTH_KEYS
