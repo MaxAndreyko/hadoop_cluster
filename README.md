@@ -36,7 +36,7 @@
 </configuration>
 ```
 10. Копируем файл `core-site.xml` на все ноды
-11. Добавить в `hdf-site.xml`:
+11. Добавить в `hdfs-site.xml`:
 ```xml
 <configuration>
     <property>
