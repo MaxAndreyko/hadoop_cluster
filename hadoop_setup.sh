@@ -1,80 +1,177 @@
-# 1: Ввод данных
+#!/bin/bash
 
-# Ввод IP-адреса сервера
-read -p "Введите IP-адрес сервера: " SERVER_IP
+# Функция для отображения ошибки и выхода
+error_exit() {
+    echo -e "\e[31m[Ошибка] $1\e[0m"
+    exit 1
+}
 
-# Ввод имени пользователя
-read -p "Введите имя пользователя: " USER_NAME
+# Функция для отображения заголовков
+print_header() {
+    echo -e "\e[33m>>>>>>>>>>>>>>>> $1 <<<<<<<<<<<<<<<\e[0m"
+}
 
-echo -e "\e[32m>>>>>>>>>>>>>>>> Начало настройки системы для сервера $SERVER_IP с пользователем $USER_NAME. <<<<<<<<<<<<<<<\e[0m"
+# Функция для проверки успешного выполнения команды
+check_success() {
+    if [ $? -eq 0 ]; then
+        echo -e "\e[32mУспешно выполнено\e[0m"
+    else
+        error_exit "Команда не выполнена."
+    fi
+}
 
-# 2: Настройка сервера
+# Чтение IP-адресов и имен хостов из файла hosts.txt
+HOSTS_FILE="hosts.txt"
+mapfile -t HOSTS < "$HOSTS_FILE"
 
-#Установка sudo
-echo -e "\e[32m>>>>>>>>>>>>>>>> Устанавливаем sudo... <<<<<<<<<<<<<<<\e[0m"
-apt-get install -y sudo
+# Ввод имени пользователя и пароля для каждого сервера
+read -p "Введите имя пользователя для подключения: " SSH_USER
+read -sp "Введите пароль для пользователя $SSH_USER: " SSH_PASS
+echo
 
-# Обновление Ubuntu
-echo -e "\e[32m>>>>>>>>>>>>>>>> Обновляем пакеты системы... <<<<<<<<<<<<<<<\e[0m"
-sudo apt-get update && sudo apt-get -y dist-upgrade
+# Ссылка на дистрибутив Hadoop
+HADOOP_URL="https://archive.apache.org/dist/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz"
+HADOOP_TAR="hadoop-3.4.0.tar.gz"
+HADOOP_DIR="/home/$SSH_USER/hadoop-3.4.0"
 
-# Установка Java
-echo -e "\e[32m>>>>>>>>>>>>>>>> Устанавливаем OpenJDK 8... <<<<<<<<<<<<<<<\e[0m"
-sudo apt-get -y install openjdk-8-jdk-headless
+# Скачивание дистрибутива Hadoop на джамп-нод, если он ещё не скачан
+if [[ ! -f "$HADOOP_TAR" ]]; then
+    print_header "Скачиваем дистрибутив Hadoop на джамп-нод..."
+    wget "$HADOOP_URL" || error_exit "Не удалось скачать Hadoop."
+    check_success
+else
+    print_header "Дистрибутив Hadoop уже скачан на джамп-ноде."
+fi
 
-# Создание каталога для установки Hadoop
-echo -e "\e[32m>>>>>>>>>>>>>>>> Создаем директорию для установки Hadoop... <<<<<<<<<<<<<<<\e[0m"
-mkdir ~/my-hadoop-install
+# Копирование дистрибутива на все ноды
+for ENTRY in "${HOSTS[@]}"; do
+    SERVER_IP=$(echo "$ENTRY" | awk '{print $1}')
+    SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
 
-#Переход в папку для установки Hadoop
-echo -e "\e[32m>>>>>>>>>>>>>>>> Переходим в директорию для установки Hadoop... <<<<<<<<<<<<<<<\e[0m"
-cd ~/my-hadoop-install
+    if [[ "$SERVER_HOST" == "team-4-jn" ]]; then
+        print_header "Пропуск копирования на джамп-ноде: $SERVER_HOST"
+        continue
+    fi
 
-# Скачивание и установка Hadoop 3.0.1
-echo -e "\e[32m>>>>>>>>>>>>>>>> Скачиваем Hadoop 3.4.0... <<<<<<<<<<<<<<<\e[0m"
-wget https://archive.apache.org/dist/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
+    print_header "Копируем hadoop-3.4.0.tar.gz на $SERVER_HOST ($SERVER_IP)..."
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$HADOOP_TAR" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/hadoop-3.4.0.tar.gz" || error_exit "Не удалось скопировать архив на $SERVER_HOST"
+    check_success
+done
 
-echo -e "\e[32m>>>>>>>>>>>>>>>> Извлекаем содержимое Hadoop... <<<<<<<<<<<<<<<\e[0m"
-tar xvzf hadoop-3.4.0.tar.gz
+# Распаковка дистрибутива на всех нодах
+for ENTRY in "${HOSTS[@]}"; do
+    SERVER_IP=$(echo "$ENTRY" | awk '{print $1}')
+    SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
 
-# 3: Настройка среды Hadoop
+    if [[ "$SERVER_HOST" == "team-4-jn" ]]; then
+        print_header "Пропуск распаковки на джамп-ноде: $SERVER_HOST"
+        continue
+    fi
 
-# Настройка JAVA_HOME в hadoop-env.sh
-echo -e "\e[32m>>>>>>>>>>>>>>>> Конфигурируем JAVA_HOME... <<<<<<<<<<<<<<<\e[0m"
-sed -i '/export JAVA_HOME=/c\export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' ~/my-hadoop-install/hadoop-3.4.0/etc/hadoop/hadoop-env.sh
+    if sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@$SERVER_IP" "[ -d $HADOOP_DIR ]"; then
+        print_header "Директория Hadoop уже существует на $SERVER_HOST ($SERVER_IP)."
+    else
+        print_header "Распаковываем дистрибутив Hadoop на $SERVER_HOST ($SERVER_IP)..."
+        sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@$SERVER_IP" "tar -xvzf /home/$SSH_USER/hadoop-3.4.0.tar.gz -C /home/$SSH_USER" || error_exit "Не удалось распаковать архив на $SERVER_HOST"
+        check_success
+    fi
+done
 
-# Добавление переменных среды для запуска Hadoop
-echo -e "\e[32m>>>>>>>>>>>>>>>> Конфигурируем переменные среды для запуска Hadoop... <<<<<<<<<<<<<<<\e[0m"
-echo "
-export HDFS_NAMENODE_USER=\"$USER_NAME\"
-export HDFS_DATANODE_USER=\"$USER_NAME\"
-export HDFS_SECONDARYNAMENODE_USER=\"$USER_NAME\"
-export YARN_RESOURCEMANAGER_USER=\"$USER_NAME\"
-export YARN_NODEMANAGER_USER=\"$USER_NAME\"" >> ~/my-hadoop-install/hadoop-3.4.0/etc/hadoop/hadoop-env.sh
+# Настройка переменных среды на нейм-ноде
+print_header "Настройка переменных среды на нейм-ноде..."
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export HADOOP_HOME=$HADOOP_DIR' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin' >> /home/$SSH_USER/.profile"
+check_success
 
-# Применение изменений
-echo -e "\e[32m>>>>>>>>>>>>>>>> Применяем изменения... <<<<<<<<<<<<<<<\e[0m"
-source ~/my-hadoop-install/hadoop-3.4.0/etc/hadoop/hadoop-env.sh
+# Копирование файла ~/.profile на все ноды
+print_header "Копирование файла .profile на все ноды..."
+for ENTRY in "${HOSTS[@]}"; do
+    SERVER_IP=$(echo "$ENTRY" | awk '{print $1}')
+    SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
 
-# Создание каталога HDFS
-echo -e "\e[32m>>>>>>>>>>>>>>>> Создаем HDFS директорию... <<<<<<<<<<<<<<<\e[0m"
-sudo mkdir -p /usr/local/hadoop/hdfs/data
+    if [[ "$SERVER_HOST" == "team-4-jn" || "$SERVER_HOST" == "team-4-nn" ]]; then
+        continue
+    fi
 
-# Передача прав текущему пользователю
-echo -e "\e[32m>>>>>>>>>>>>>>>> Устанавливаем права доступа на директорию HDFS для $USER_NAME... <<<<<<<<<<<<<<<\e[0m"
-sudo chown -R $USER_NAME:$USER_NAME /usr/local/hadoop/hdfs/data
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:/home/$SSH_USER/.profile" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/.profile" || error_exit "Не удалось скопировать .profile на $SERVER_HOST"
+    check_success
+done
 
-# 4: Завершение начальной настройки
+# Добавление JAVA_HOME в hadoop-env.sh на нейм-ноде
+print_header "Добавление JAVA_HOME в hadoop-env.sh на нейм-ноде..."
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh"
+check_success
 
-# Настройка core-site.xml
-echo -e "\e[32m>>>>>>>>>>>>>>>> Конфигурируем core-site.xml... <<<<<<<<<<<<<<<\e[0m"
-cat <<EOL > ~/my-hadoop-install/hadoop-3.4.0/etc/hadoop/core-site.xml
-<configuration>
-    <property>
-        <name>fs.defaultFS</name>
-        <value>hdfs://$SERVER_IP:9000</value>
-    </property>
-</configuration>
-EOL
+# Копирование файла hadoop-env.sh на все дата-нод
+print_header "Копирование hadoop-env.sh на все ноды..."
+for ENTRY in "${HOSTS[@]}"; do
+    SERVER_IP=$(echo "$ENTRY" | awk '{print $1}')
+    SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
+    
+    if [[ "$SERVER_HOST" == "team-4-jn" || "$SERVER_HOST" == "team-4-nn" ]]; then
+        continue
+    fi
+    
+    print_header "Копируем hadoop-env.sh на $SERVER_HOST ($SERVER_IP)..."
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" || error_exit "Не удалось скопировать hadoop-env.sh на $SERVER_HOST"
+    check_success
+done
 
-echo -e "\e[32m>>>>>>>>>>>>>>>> Завершение настройки системы. <<<<<<<<<<<<<<<\e[0m"
+# Настройка core-site.xml на нейм-ноде
+print_header "Настройка core-site.xml на нейм-ноде..."
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo '<configuration><property><name>fs.defaultFS</name><value>hdfs://192.168.1.19:9000</value></property></configuration>' > $HADOOP_DIR/etc/hadoop/core-site.xml" || error_exit "Не удалось настроить core-site.xml"
+check_success
+
+# Копирование core-site.xml на все ноды
+for ENTRY in "${HOSTS[@]}"; do
+    SERVER_IP=$(echo "$ENTRY" | awk '{print $1}')
+    SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
+
+    if [[ "$SERVER_HOST" == "team-4-jn" || "$SERVER_HOST" == "team-4-nn" ]]; then
+        continue
+    fi
+
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:$HADOOP_DIR/etc/hadoop/core-site.xml" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/core-site.xml" || error_exit "Не удалось скопировать core-site.xml на $SERVER_HOST"
+    check_success
+done
+
+# Настройка hdfs-site.xml на нейм-ноде
+print_header "Настройка hdfs-site.xml на нейм-ноде..."
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo '<configuration><property><name>dfs.replication</name><value>3</value></property></configuration>' > $HADOOP_DIR/etc/hadoop/hdfs-site.xml" || error_exit "Не удалось настроить hdfs-site.xml"
+check_success
+
+# Копирование hdfs-site.xml на все ноды
+for ENTRY in "${HOSTS[@]}"; do
+    SERVER_IP=$(echo "$ENTRY" | awk '{print $1}')
+    SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
+
+    if [[ "$SERVER_HOST" == "team-4-jn" || "$SERVER_HOST" == "team-4-nn" ]]; then
+        continue
+    fi
+
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:$HADOOP_DIR/etc/hadoop/hdfs-site.xml" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hdfs-site.xml" || error_exit "Не удалось скопировать hdfs-site.xml на $SERVER_HOST"
+    check_success
+done
+
+print_header "Обновляем файл workers на нейм-ноде..."
+WORKERS_CONTENT=$(awk '!/team-4-jn/ {print $1}' "$HOSTS_FILE")
+
+# Записываем в файл workers
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@${HOSTS[1]%% *}" "echo -e \"$WORKERS_CONTENT\" > $HADOOP_DIR/etc/hadoop/workers" || error_exit "Не удалось обновить файл workers на нейм-ноде"
+check_success
+
+# Копирование файла workers на датаноды
+for ENTRY in "${HOSTS[@]}"; do
+    SERVER_IP=$(echo "$ENTRY" | awk '{print $1}')
+    SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
+
+    if [[ "$SERVER_HOST" == "team-4-nn" || "$SERVER_HOST" == "team-4-jn" ]]; then
+        print_header "Пропуск копирования файла workers на $SERVER_HOST"
+        continue
+    fi
+
+    print_header "Копируем файл workers на $SERVER_HOST ($SERVER_IP)..."
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@${HOSTS[1]%% *}:$HADOOP_DIR/etc/hadoop/workers" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/workers"
+    check_success
+done
