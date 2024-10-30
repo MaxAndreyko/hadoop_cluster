@@ -21,7 +21,7 @@ chmod +x <script-name>.sh
 10. Скопировать authorized_keys на все ноды с помощью команды `scp ./ssh/authorized_keys team-4-<node-name>:/home/hadoop/.ssh`
 
 ## II. Конфигурирование hadoop
-1. Поставить sshpass
+0. Поставить sshpass
 1. Скачать дистрибутив hadoop на джамп ноду 
 2. Скопировать дистрибутив hadoop с джамп ноды на все ноды с помощью команды `scp hadoop-3.4.0.tar.gz team-4-<node-name>:/home/hadoop/hadoop-3.4.0.tar.gz`
 3. Распаковать архивы с дистрибутивом hadoop на всех нодах
@@ -63,8 +63,8 @@ team-4-dn-01
 2. Запустить кластер `sbin/start-dfs.sh`
 
 # Алгоритм разворачивания Hive
-I. Установка Hive
-На неймноде:
+## I. Установка Hive
+0. Залогиниться на джампноду
 1. Войти в пользователя hadoop
 2. Скачать дистрибутив hive:
 ```bash
@@ -73,19 +73,18 @@ wget https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz
 3. Распаковать архив в папку `apache-hive-4.0.1-bin`: `tar -zxvf apache-hive-4.0.1-bin.tar.gz`
 4. Добавить переменную среды: `export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin`
 5. Добавить путь к испольныемым файлам Hive в PATH: `export PATH=/$HIVE_HOME/bin:$PATH`
-II. Конфигурирование Hive
-На неймонде:
+## II. Конфигурирование Hive
+1. Залогиниться на неймноду
 2. Войти в пользователя hadoop
-2. Создать папку для временных файлов Hive с помощью команды: `hdfs dfs -mkdir /tmp`
-3. Создать папку для Hive с помощью команды: `hdfs dfs -mkdir -p /user/hive/warehouse` (можно посмотреть на нее в веб дашборде)
-4. Выдать права на папку с временными файлами Hive: `hdfs dfs -chmod g+w /tmp`
-5. Выдать права на папку для Hive: `hdfs dfs -chmod g+w /user/hive/warehouse`
-6. Инициализировать внутреннюю БД Hive: `$HIVE_HOME/bin/schematool -dbType derby -initSchema`
----
-Из 12-ти минутного видео
-1. Переключиться на джампноду
-2. Скопировать шаблон конфигурационного файла в отдельный файл: `cp $HIVE_HOME/conf/hive-default.xml.template $HIVE_HOME/conf/hive-site.xml`
-3. Добавить property, которое будет указывать на папку для хранения данных hive, в `hive-site.xml` (на последней строчке внутри тега `<configuration>`)
+3. Создать папку для временных файлов Hive с помощью команды: `hdfs dfs -mkdir /tmp`
+4. Создать папку для Hive с помощью команды: `hdfs dfs -mkdir -p /user/hive/warehouse` (можно посмотреть на нее в веб дашборде)
+5. Выдать права на папку с временными файлами Hive: `hdfs dfs -chmod g+w /tmp`
+6. Выдать права на папку для Hive: `hdfs dfs -chmod g+w /user/hive/warehouse`
+7. Инициализировать внутреннюю БД Hive: `$HIVE_HOME/bin/schematool -dbType derby -initSchema`
+8. Переключиться на джампноду
+9. Войти в пользователя hadoop
+10. Скопировать шаблон конфигурационного файла в отдельный файл: `cp $HIVE_HOME/conf/hive-default.xml.template $HIVE_HOME/conf/hive-site.xml`
+11. Добавить property, которое будет указывать на папку для хранения данных hive, в `hive-site.xml` (на последней строчке внутри тега `<configuration>`)
 ```xml
 <property>
     <name>hive.metastore.warehouse.dir</name>
@@ -93,15 +92,14 @@ II. Конфигурирование Hive
     <desciption>Hive warehouse directory</description>
 </property>
 ```
-4. Скопировать шаблон `hive-env.sh`: `cp $HIVE_HOME/conf/hive-env.sh.template $HIVE_HOME/conf/hive-env.sh`
-5. Добавить в `hive-env.sh`:
+12. Скопировать шаблон `hive-env.sh`: `cp $HIVE_HOME/conf/hive-env.sh.template $HIVE_HOME/conf/hive-env.sh`
+13. Добавить в конец `hive-env.sh`:
+```xml
+export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin
+export HIVE_CONF_DIR=$HIVE_HOME/conf
+export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
 ```
-HADOOP_HOME=/home/hadoop/hadoop-3.4.0
-JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin
-```
----
-III. Запуск Hive
+## III. Запуск Hive
 1. Запустить Hive командой:
 ```bash
 hive --hiveconf hive.server2.enable.doAs=false
