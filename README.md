@@ -21,6 +21,7 @@ chmod +x <script-name>.sh
 10. Скопировать authorized_keys на все ноды с помощью команды `scp ./ssh/authorized_keys team-4-<node-name>:/home/hadoop/.ssh`
 
 ## II. Конфигурирование hadoop
+1. Поставить sshpass
 1. Скачать дистрибутив hadoop на джамп ноду 
 2. Скопировать дистрибутив hadoop с джамп ноды на все ноды с помощью команды `scp hadoop-3.4.0.tar.gz team-4-<node-name>:/home/hadoop/hadoop-3.4.0.tar.gz`
 3. Распаковать архивы с дистрибутивом hadoop на всех нодах
