@@ -49,13 +49,17 @@ for ENTRY in "${HOSTS[@]}"; do
     SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
 
     if [[ "$SERVER_HOST" == "team-4-jn" ]]; then
-        print_header "Пропуск копирования на джамп-ноде: $SERVER_HOST"
         continue
     fi
 
-    print_header "Копируем hadoop-3.4.0.tar.gz на $SERVER_HOST ($SERVER_IP)..."
-    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$HADOOP_TAR" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/hadoop-3.4.0.tar.gz" || error_exit "Не удалось скопировать архив на $SERVER_HOST"
-    check_success
+    print_header "Проверяем наличие hadoop-3.4.0.tar.gz на $SERVER_HOST ($SERVER_IP)..."
+    if sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@$SERVER_IP" "[ -f /home/$SSH_USER/hadoop-3.4.0.tar.gz ]"; then
+        echo -e "\e[32mАрхив уже существует на $SERVER_HOST ($SERVER_IP), пропускаем копирование.\e[0m"
+    else
+        print_header "Копируем hadoop-3.4.0.tar.gz на $SERVER_HOST ($SERVER_IP)..."
+        sudo -u $SSH_USER scp "$HADOOP_TAR" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/hadoop-3.4.0.tar.gz" || error_exit "Не удалось скопировать архив на $SERVER_HOST"
+        check_success
+    fi
 done
 
 # Распаковка дистрибутива на всех нодах
@@ -64,7 +68,6 @@ for ENTRY in "${HOSTS[@]}"; do
     SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
 
     if [[ "$SERVER_HOST" == "team-4-jn" ]]; then
-        print_header "Пропуск распаковки на джамп-ноде: $SERVER_HOST"
         continue
     fi
 
@@ -79,9 +82,9 @@ done
 
 # Настройка переменных среды на нейм-ноде
 print_header "Настройка переменных среды на нейм-ноде..."
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> /home/$SSH_USER/.profile"
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export HADOOP_HOME=$HADOOP_DIR' >> /home/$SSH_USER/.profile"
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export HADOOP_HOME=$HADOOP_DIR' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin' >> /home/$SSH_USER/.profile"
 check_success
 
 # Копирование файла ~/.profile на все ноды
@@ -94,13 +97,14 @@ for ENTRY in "${HOSTS[@]}"; do
         continue
     fi
 
-    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:/home/$SSH_USER/.profile" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/.profile" || error_exit "Не удалось скопировать .profile на $SERVER_HOST"
+    print_header "Копируем файл .profile на $SERVER_HOST ($SERVER_IP)..."
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@team-4-nn:/home/$SSH_USER/.profile" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/.profile" || error_exit "Не удалось скопировать .profile на $SERVER_HOST"
     check_success
 done
 
 # Добавление JAVA_HOME в hadoop-env.sh на нейм-ноде
 print_header "Добавление JAVA_HOME в hadoop-env.sh на нейм-ноде..."
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh"
 check_success
 
 # Копирование файла hadoop-env.sh на все дата-нод
@@ -114,13 +118,13 @@ for ENTRY in "${HOSTS[@]}"; do
     fi
     
     print_header "Копируем hadoop-env.sh на $SERVER_HOST ($SERVER_IP)..."
-    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" || error_exit "Не удалось скопировать hadoop-env.sh на $SERVER_HOST"
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@team-4-nn:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" || error_exit "Не удалось скопировать hadoop-env.sh на $SERVER_HOST"
     check_success
 done
 
 # Настройка core-site.xml на нейм-ноде
 print_header "Настройка core-site.xml на нейм-ноде..."
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo '<configuration><property><name>fs.defaultFS</name><value>hdfs://192.168.1.19:9000</value></property></configuration>' > $HADOOP_DIR/etc/hadoop/core-site.xml" || error_exit "Не удалось настроить core-site.xml"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo '<configuration><property><name>fs.defaultFS</name><value>hdfs://team-4-nn:9000</value></property></configuration>' > $HADOOP_DIR/etc/hadoop/core-site.xml" || error_exit "Не удалось настроить core-site.xml"
 check_success
 
 # Копирование core-site.xml на все ноды
@@ -132,13 +136,14 @@ for ENTRY in "${HOSTS[@]}"; do
         continue
     fi
 
-    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:$HADOOP_DIR/etc/hadoop/core-site.xml" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/core-site.xml" || error_exit "Не удалось скопировать core-site.xml на $SERVER_HOST"
+    print_header "Копируем файл core-site.xml на $SERVER_HOST ($SERVER_IP)..."
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@team-4-nn:$HADOOP_DIR/etc/hadoop/core-site.xml" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/core-site.xml" || error_exit "Не удалось скопировать core-site.xml на $SERVER_HOST"
     check_success
 done
 
 # Настройка hdfs-site.xml на нейм-ноде
 print_header "Настройка hdfs-site.xml на нейм-ноде..."
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "echo '<configuration><property><name>dfs.replication</name><value>3</value></property></configuration>' > $HADOOP_DIR/etc/hadoop/hdfs-site.xml" || error_exit "Не удалось настроить hdfs-site.xml"
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo '<configuration><property><name>dfs.replication</name><value>3</value></property></configuration>' > $HADOOP_DIR/etc/hadoop/hdfs-site.xml" || error_exit "Не удалось настроить hdfs-site.xml"
 check_success
 
 # Копирование hdfs-site.xml на все ноды
@@ -150,14 +155,14 @@ for ENTRY in "${HOSTS[@]}"; do
         continue
     fi
 
-    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@192.168.1.19:$HADOOP_DIR/etc/hadoop/hdfs-site.xml" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hdfs-site.xml" || error_exit "Не удалось скопировать hdfs-site.xml на $SERVER_HOST"
+    print_header "Копируем файл hdfs-site.xml на $SERVER_HOST ($SERVER_IP)..."
+    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@team-4-nn:$HADOOP_DIR/etc/hadoop/hdfs-site.xml" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hdfs-site.xml" || error_exit "Не удалось скопировать hdfs-site.xml на $SERVER_HOST"
     check_success
 done
 
+# Записываем в файл workers
 print_header "Обновляем файл workers на нейм-ноде..."
 WORKERS_CONTENT=$(awk '!/team-4-jn/ {print $1}' "$HOSTS_FILE")
-
-# Записываем в файл workers
 sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@${HOSTS[1]%% *}" "echo -e \"$WORKERS_CONTENT\" > $HADOOP_DIR/etc/hadoop/workers" || error_exit "Не удалось обновить файл workers на нейм-ноде"
 check_success
 
@@ -167,7 +172,6 @@ for ENTRY in "${HOSTS[@]}"; do
     SERVER_HOST=$(echo "$ENTRY" | awk '{print $2}')
 
     if [[ "$SERVER_HOST" == "team-4-nn" || "$SERVER_HOST" == "team-4-jn" ]]; then
-        print_header "Пропуск копирования файла workers на $SERVER_HOST"
         continue
     fi
 
@@ -175,3 +179,13 @@ for ENTRY in "${HOSTS[@]}"; do
     sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@${HOSTS[1]%% *}:$HADOOP_DIR/etc/hadoop/workers" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/workers"
     check_success
 done
+
+# Форматирование файловой системы HDFS на нейм-ноде
+print_header "Форматирование файловой системы HDFS на нейм-ноде..."
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "$HADOOP_DIR/bin/hdfs namenode -format" || error_exit "Не удалось отформатировать HDFS."
+check_success
+
+# Запуск кластера HDFS
+print_header "Запуск кластера HDFS..."
+sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "$HADOOP_DIR/sbin/start-dfs.sh" || error_exit "Не удалось запустить кластер HDFS."
+check_success
