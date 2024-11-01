@@ -107,3 +107,88 @@ hive --hiveconf hive.server2.enable.doAs=false
 --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log
 &
 ```
+## IV. Конфигурирование и запуск PostgreSQL
+1. Залогиниться на неймноду через team: `ssh team@team-4-nn`
+2. Установка PostgreSQL: `sudo apt install postgresql`
+3. Залогиниться в пользователя postgres: `sudo -i -u postgres` (нет каталога в домашней папке для этого пользователя, его папка-директория PostgreSQL
+4. Подключаемся к консоли postgres: `psql`
+5. Создаем базу данных: `CREATE DATABASE metastore`
+6. Создаем пользователя базы данных: `CREATE USER hive with password 'ultrahive'`
+7. Передаем права пользователю: `GRANT ALL PRIVILEGES ON DATABASE "metastore" TO hive` (этого недостаточно, см.п.8)
+8. Сделаем владельцем базы данных созданного пользователя: `ALTER DATABASE OWNER TO hive`
+9. Выходим из консоли: `\q`
+10. Отключаемся от пользователя: `exit`
+11. Даем доступ к базе данных снаружи, правим конфиги:
+    1) `sudo nano /etc/postgresql/16/main/postgresql.conf` - параметры подсоединения к базе данных
+    2) Раскомментируем строчку и изменим ее, чтобы адрес соответствовал имени нашего хоста ```xml
+                                 listen_addresses = 'team-4-nn'
+                                 ```
+    3) `sudo nano /etc/postgresql/16/main/pg_conf` - параметры доступа к базе данных
+    4) Раскомментируем строчку и изменим ее, чтобы адрес соответствовал имени нашего хоста ```xml
+                                 #IPv4 local connections:
+                                 host  metastore    hive    192.168.1.19/32      password
+                                 ```
+12. Перезапускаем PostgreSQL: `sudo systemctl restart postgresql`
+13. Проверяем: `sudo systemctl status postgresql`
+14. Возрващаемся на джампноду 
+15. Подключаемся к консоли postgres: `psql`
+16. Устанавливаем клиент для PostgreSQL: `sudo apt install postgresql-client-16`
+17. Заходим в базу данных: `psql -h team-4-nn -p 5432 -U hive -W metastore`
+## V. Конфигурирование и запуск Hive
+1. Переключаемся на пользователя hadoop: `sudo -i -u hadoop`
+2. Качаем дистрибутив hive: `wget [https//-](https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz)`
+3. Распаковывем: `tar -xyzf apache-hive-4.0.1-bin.tar.gz`
+4. Перезходим в папку дистрибутива: `cd apache-hive-4.0.1-bin`
+5. Качаем драйвер для работы с PostgreSQL: `wget [https//-](https://jdbc.postgresql.org/download/postgresql-42.7.4.jar)`
+6. Проверяем наличие драйвера: `ls -l | grep postgres`
+7. Правим конфиги:
+    1) Переходим в папку с конфигами: `cd ../conf/`
+    2) Создаем конфиг: `nano hive-site.xml`
+    3) Добавляем в конфиг ```xml
+<configuration>
+    <property>
+        <name>hive.server2.authentication</name>
+        <value>NONE</value>
+    </property>
+    <property>
+        <name>hive.metastore.warehouse.dir</name>
+        <value>/user/hive/warehouse</value>
+    </property>
+    <property>
+        <name>hive.server2.thrift.port</name>
+        <value>5433</value>
+        <description>TCP port number to listen on, default 10000</description>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:postgresql://tmpl-nn:5432/metastore</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionDriver Name</name>
+        <value>org.postgresql.Driver</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionUserName</name>
+        <value>hive</value>
+    </property>
+    <property>
+        <name> javax.jdo.option.ConnectionPassword</name>
+        <value>ultrahive</value>
+    </property>
+</configuration>
+                                 ```
+    4) Открываем конфиг hadoop и добавляем в конце: `nano ~/.pro` ```xml
+                                 export HIVE_HOME=/home/hadoop/apache-hive.4.0.1-bin
+                                 export HIVE_CONF_DIR=$HIVE_HOME/conf
+                                 export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
+                                 export PATH=$PATH:$HIVE_HOME/bin
+                                 ```
+    5) Активируем окружение: `source ~/.profile`
+8. Убеждаемся, что Hive заработал: `hive --version`
+9. Создаем папку: `~/apache-hive-4.0.1-bin/conf$ hdfs dfs -mkdir -p /user/hive/warehouse`
+10. Даем права для использования хранилища: `~/apache-hive-4.0.1-bin/conf$ hdfs -chmod g+w /tmp`
+11. Даем права для использования хранилища: `~/apache-hive-4.0.1-bin/conf$ hdfs -chmod g+w /user/hive/warehouse`
+12. Возвращаемся в директорию: `cd ../`
+13. Инициализация схемы базы данных: `bin/schematool -dbType postgres -initSchema`
+14. Зпаускаем Hive: `hadoop@tmpl-jn:"/apache-hive-4.0.1-bins hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authorization.enabled=false --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log &`
+                                
