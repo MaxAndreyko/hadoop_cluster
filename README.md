@@ -137,10 +137,10 @@ hive --hiveconf hive.server2.enable.doAs=false
 17. Заходим в базу данных: `psql -h team-4-nn -p 5432 -U hive -W metastore`
 ## V. Конфигурирование и запуск Hive
 1. Переключаемся на пользователя hadoop: `sudo -i -u hadoop`
-2. Качаем дистрибутив hive: `wget [https//-](https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz)`
+2. Качаем дистрибутив hive: `wget https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz`
 3. Распаковывем: `tar -xyzf apache-hive-4.0.1-bin.tar.gz`
 4. Перезходим в папку дистрибутива: `cd apache-hive-4.0.1-bin`
-5. Качаем драйвер для работы с PostgreSQL: `wget [https//-](https://jdbc.postgresql.org/download/postgresql-42.7.4.jar)`
+5. Качаем драйвер для работы с PostgreSQL: `wget https://jdbc.postgresql.org/download/postgresql-42.7.4.jar`
 6. Проверяем наличие драйвера: `ls -l | grep postgres`
 7. Правим конфиги:
     1) Переходим в папку с конфигами: `cd ../conf/`
@@ -179,12 +179,13 @@ hive --hiveconf hive.server2.enable.doAs=false
         </property>
     </configuration>
     ```
-    4) Открываем конфиг hadoop и добавляем в конце: `nano ~/.pro` ```xml
-                                 export HIVE_HOME=/home/hadoop/apache-hive.4.0.1-bin
-                                 export HIVE_CONF_DIR=$HIVE_HOME/conf
-                                 export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
-                                 export PATH=$PATH:$HIVE_HOME/bin
-                                 ```
+    4) Открываем конфиг hadoop и добавляем в конце: `nano ~/.profile`
+    ```bash
+    export HIVE_HOME=/home/hadoop/apache-hive.4.0.1-bin
+    export HIVE_CONF_DIR=$HIVE_HOME/conf
+    export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
+    export PATH=$PATH:$HIVE_HOME/bin
+    ```
     5) Активируем окружение: `source ~/.profile`
 8. Убеждаемся, что Hive заработал: `hive --version`
 9. Создаем папку: `hdfs dfs -mkdir -p /user/hive/warehouse`
@@ -194,7 +195,7 @@ hive --hiveconf hive.server2.enable.doAs=false
 13. Инициализация схемы базы данных: `bin/schematool -dbType postgres -initSchema`
 14. Зпаускаем Hive:
 ```bash
-    hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authorization.enabled=false --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log &
+hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authorization.enabled=false --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log &
 ```
 15. Запуск консоли beeline:
 ```bash
