@@ -133,7 +133,6 @@ hive --hiveconf hive.server2.enable.doAs=false
 12. Перезапускаем PostgreSQL: `sudo systemctl restart postgresql`
 13. Проверяем: `sudo systemctl status postgresql`
 14. Возрващаемся на джампноду 
-15. Подключаемся к консоли postgres: `psql`
 16. Устанавливаем клиент для PostgreSQL: `sudo apt install postgresql-client-16`
 17. Заходим в базу данных: `psql -h team-4-nn -p 5432 -U hive -W metastore`
 ## V. Конфигурирование и запуск Hive
@@ -188,10 +187,17 @@ hive --hiveconf hive.server2.enable.doAs=false
                                  ```
     5) Активируем окружение: `source ~/.profile`
 8. Убеждаемся, что Hive заработал: `hive --version`
-9. Создаем папку: `~/apache-hive-4.0.1-bin/conf$ hdfs dfs -mkdir -p /user/hive/warehouse`
-10. Даем права для использования хранилища: `~/apache-hive-4.0.1-bin/conf$ hdfs -chmod g+w /tmp`
-11. Даем права для использования хранилища: `~/apache-hive-4.0.1-bin/conf$ hdfs -chmod g+w /user/hive/warehouse`
+9. Создаем папку: `hdfs dfs -mkdir -p /user/hive/warehouse`
+10. Даем права для использования хранилища: `hdfs -chmod g+w /tmp`
+11. Даем права для использования хранилища: `hdfs -chmod g+w /user/hive/warehouse`
 12. Возвращаемся в директорию: `cd ../`
 13. Инициализация схемы базы данных: `bin/schematool -dbType postgres -initSchema`
-14. Зпаускаем Hive: `hadoop@tmpl-jn:"/apache-hive-4.0.1-bins hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authorization.enabled=false --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log &`
+14. Зпаускаем Hive:
+```bash
+    hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authorization.enabled=false --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log &
+```
+15. Запуск консоли beeline:
+```bash
+beeline -u jdbc:hive2://team-4-nn:5433
+```
                                 
