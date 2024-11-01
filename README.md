@@ -123,7 +123,7 @@ hive --hiveconf hive.server2.enable.doAs=false
     2) Раскомментируем строчку и изменим ее, чтобы адрес соответствовал имени нашего хоста ```xml
                                  listen_addresses = 'team-4-nn'
                                  ```
-    3) `sudo nano /etc/postgresql/16/main/pg_conf` - параметры доступа к базе данных
+    3) `sudo nano /etc/postgresql/16/main/pg_hba.conf` - параметры доступа к базе данных
     4) Раскомментируем строчку и изменим ее, чтобы адрес соответствовал имени нашего хоста ```xml
                                  #IPv4 local connections:
                                  host  metastore    hive    192.168.1.19/32      password
@@ -131,7 +131,6 @@ hive --hiveconf hive.server2.enable.doAs=false
 12. Перезапускаем PostgreSQL: `sudo systemctl restart postgresql`
 13. Проверяем: `sudo systemctl status postgresql`
 14. Возрващаемся на джампноду 
-15. Подключаемся к консоли postgres: `psql`
 16. Устанавливаем клиент для PostgreSQL: `sudo apt install postgresql-client-16`
 17. Заходим в базу данных: `psql -h team-4-nn -p 5432 -U hive -W metastore`
 ## V. Конфигурирование и запуск Hive
