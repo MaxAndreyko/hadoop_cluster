@@ -195,38 +195,40 @@ beeline -u jdbc:hive2://localhost:5433
 1. Заходим на джампноду
 2. Создадим на hdfs папку для файлов для взаимодействия: `hdfs dfs -mkdir /input`
 3. Выдадим права для записи: `hdfs dfs -chmod g+w /input`
-4. Загружаем данные: `hdfs dfs -put <file_name> /input`
-5. Проверяем информацию о блоках файла: `hdfs fsck /input/<file_name>`
-6. Запуск консоли beeline:
+4. Скачиваем данные `wget -o ufo_sightings.csv  https://raw.githubusercontent.com/rdjoshi0906/Dataset_UFO/refs/heads/main/ufo_sightings.csv`
+5. Загружаем данные: `hdfs dfs -put <file_name> /input`
+6. Проверяем информацию о блоках файла: `hdfs fsck /input/<file_name>`
+7. Запуск консоли beeline:
 ```bash
 beeline -u jdbc:hive2://localhost:5433
 ```
-7. Создаем базу данных: `CREATE DATABASE test`
-8. Преобразовываем файл в реляционные данные: `CREATE TABLE IF NOT EXISTS test.<file_name> ( details string
-date string
-city string
-state string
-country string
-shape string
-summary string
-report_date string
-posted_date string
-month_count string)
+7. Создаем базу данных: `CREATE DATABASE test;`
+8. Переключиться на созданную БД: `use test;`
+9. Преобразовываем файл в реляционные данные: `CREATE TABLE IF NOT EXISTS test.ufo_sightings ( details string,
+`date` date,
+city string,
+state string,
+country string,
+shape string,
+summary string,
+report_date date,
+posted_date date,
+month_count int)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|';`
-9. Проверим таблицу: `DESCRIBE TABLE ufo;`
-10. Загружаем данные: `LOAD DATA INPATH '/input/<file_name>/' INTO TABLE test.ufo`
-11. Посчитаем кол-во записей: `SELECT COUNT(*) from test.ufo`
+10. Проверим таблицу: `DESCRIBE TABLE ufo;`
+11. Загружаем данные: `LOAD DATA INPATH '/input/<file_name>/' INTO TABLE test.ufo`
+12. Посчитаем кол-во записей: `SELECT COUNT(*) from test.ufo`
 ## VII. Преобразование таблицы в партиционированную
-1. Создаем новую таблицу: `CREATE TABLE IF NOT EXISTS test.partitioned_ufo ( details string
-date string
-city string
-state string
-country string
-shape string
-summary string
-report_date string
-posted_date string
-month_count string) PARTITIONED BY (date string) 
+1. Создаем новую таблицу: `CREATE TABLE IF NOT EXISTS test.ufo_sightings ( details string,
+`date` date,
+city string,
+state string,
+country string,
+shape string,
+summary string,
+report_date date,
+posted_date date,
+month_count int)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|';`
 2. Перенесем данные в новую таблицу: `INSERT INTO TABLE test.partitioned_ufo PARTITION (year)
 SELECT date, city, state, country, shape, summary, report_date, posted_date, month_count
