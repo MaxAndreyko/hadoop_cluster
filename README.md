@@ -215,7 +215,7 @@ report_date date,
 posted_date date,
 month_count int)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|';`
-10. Проверим таблицу: `DESCRIBE TABLE ufo;`
+10. Проверим таблицу: `DESCRIBE db.ufo_sightings;`
 11. Загружаем данные: `LOAD DATA INPATH '/input/<file_name>/' INTO TABLE test.ufo`
 12. Посчитаем кол-во записей: `SELECT COUNT(*) from test.ufo`
 ## VII. Преобразование таблицы в партиционированную
