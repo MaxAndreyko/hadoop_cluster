@@ -192,7 +192,6 @@ hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authoriz
 beeline -u jdbc:hive2://localhost:5433
 ```
 ## VI. Работа с базой данных
-1. Создаем базу данных: `CREATE DATABASE test`
 1. Заходим на джампноду
 2. Создадим на hdfs папку для файлов для взаимодействия: `hdfs dfs -mkdir /input`
 3. Выдадим права для записи: `hdfs dfs -chmod g+w /input`
@@ -202,7 +201,8 @@ beeline -u jdbc:hive2://localhost:5433
 ```bash
 beeline -u jdbc:hive2://localhost:5433
 ```
-7. Преобразовываем файл в реляционные данные: `CREATE TABLE IF NOT EXISTS test.<file_name> ( details string
+7. Создаем базу данных: `CREATE DATABASE test`
+8. Преобразовываем файл в реляционные данные: `CREATE TABLE IF NOT EXISTS test.<file_name> ( details string
 date string
 city string
 state string
@@ -213,11 +213,11 @@ report_date string
 posted_date string
 month_count string)
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|';`
-8. Проверим таблицу: `DESCRIBE TABLE ufo;`
-9. Загружаем данные: `LOAD DATA INPATH '/input/<file_name>/' INTO TABLE test.ufo`
-10. Посчитаем кол-во записей: `SELECT COUNT(*) from test.ufo`
+9. Проверим таблицу: `DESCRIBE TABLE ufo;`
+10. Загружаем данные: `LOAD DATA INPATH '/input/<file_name>/' INTO TABLE test.ufo`
+11. Посчитаем кол-во записей: `SELECT COUNT(*) from test.ufo`
 ## VII. Преобразование таблицы в партиционированную
-1. Создаем новую таблицу: `CREATE TABLE IF NOT EXISTS partitioned_ufo ( details string
+1. Создаем новую таблицу: `CREATE TABLE IF NOT EXISTS test.partitioned_ufo ( details string
 date string
 city string
 state string
@@ -228,7 +228,7 @@ report_date string
 posted_date string
 month_count string) PARTITIONED BY (date string) 
 ROW FORMAT DELIMITED FIELDS TERMINATED BY '|';`
-2. Перенесем данные в новую таблицу: `INSERT INTO TABLE partitioned_ufo PARTITION (year)
+2. Перенесем данные в новую таблицу: `INSERT INTO TABLE test.partitioned_ufo PARTITION (year)
 SELECT date, city, state, country, shape, summary, report_date, posted_date, month_count
-FROM ufo;`
+FROM test.ufo;`
 3. Проверяем: `SHOW PARTITIONS partitioned_ufo`
