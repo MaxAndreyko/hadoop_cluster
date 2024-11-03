@@ -164,7 +164,7 @@ team-4-dn-01
             <value>hive</value>
         </property>
         <property>
-            <name> javax.jdo.option.ConnectionPassword</name>
+            <name>javax.jdo.option.ConnectionPassword</name>
             <value>ultrahive</value>
         </property>
     </configuration>
