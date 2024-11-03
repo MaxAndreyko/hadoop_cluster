@@ -61,52 +61,7 @@ team-4-dn-01
 ## III. Запуск hadoop кластера
 1. Отформатировать файловую систему `bin/hdfs namenode -format`
 2. Запустить кластер `sbin/start-dfs.sh`
-
-# Алгоритм разворачивания Hive
-## I. Установка Hive
-0. Залогиниться на джампноду
-1. Войти в пользователя hadoop
-2. Скачать дистрибутив hive:
-```bash
-wget https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz
-```
-3. Распаковать архив в папку `apache-hive-4.0.1-bin`: `tar -zxvf apache-hive-4.0.1-bin.tar.gz`
-4. Добавить переменную среды: `export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin`
-5. Добавить путь к испольныемым файлам Hive в PATH: `export PATH=/$HIVE_HOME/bin:$PATH`
-## II. Конфигурирование Hive
-1. Залогиниться на неймноду
-2. Войти в пользователя hadoop
-3. Создать папку для временных файлов Hive с помощью команды: `hdfs dfs -mkdir /tmp`
-4. Создать папку для Hive с помощью команды: `hdfs dfs -mkdir -p /user/hive/warehouse` (можно посмотреть на нее в веб дашборде)
-5. Выдать права на папку с временными файлами Hive: `hdfs dfs -chmod g+w /tmp`
-6. Выдать права на папку для Hive: `hdfs dfs -chmod g+w /user/hive/warehouse`
-7. Инициализировать внутреннюю БД Hive: `$HIVE_HOME/bin/schematool -dbType derby -initSchema`
-8. Переключиться на джампноду
-9. Войти в пользователя hadoop
-10. Скопировать шаблон конфигурационного файла в отдельный файл: `cp $HIVE_HOME/conf/hive-default.xml.template $HIVE_HOME/conf/hive-site.xml`
-11. Добавить property, которое будет указывать на папку для хранения данных hive, в `hive-site.xml` (на последней строчке внутри тега `<configuration>`)
-```xml
-<property>
-    <name>hive.metastore.warehouse.dir</name>
-    <value>/user/hive/warehouse</value>
-    <desciption>Hive warehouse directory</description>
-</property>
-```
-12. Скопировать шаблон `hive-env.sh`: `cp $HIVE_HOME/conf/hive-env.sh.template $HIVE_HOME/conf/hive-env.sh`
-13. Добавить в конец `hive-env.sh`:
-```xml
-export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin
-export HIVE_CONF_DIR=$HIVE_HOME/conf
-export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
-```
-## III. Запуск Hive
-1. Запустить Hive командой:
-```bash
-hive --hiveconf hive.server2.enable.doAs=false
---hiveconf hive.security.authorization.enabled=false \
---service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log
-&
-```
+3. 
 ## IV. Конфигурирование и запуск PostgreSQL
 1. Залогиниться на неймноду через team: `ssh team@team-4-nn`
 2. Установка PostgreSQL: `sudo apt install postgresql`
