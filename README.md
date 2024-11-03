@@ -156,7 +156,7 @@ team-4-dn-01
             <value>jdbc:postgresql://tmpl-nn:5432/metastore</value>
         </property>
         <property>
-            <name>javax.jdo.option.ConnectionDriver Name</name>
+            <name>javax.jdo.option.ConnectionDriverName</name>
             <value>org.postgresql.Driver</value>
         </property>
         <property>
