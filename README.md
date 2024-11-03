@@ -1,3 +1,7 @@
+# Алгоритм запуска скриптов ПЗ 1-3
+
+
+
 # Алгоритма скрипта для разворачивания hadoop
 ! **Перед запуском скрипта необходимо сделать его исполняемым**:
 ```bash
@@ -136,7 +140,7 @@ team-4-dn-01
     ```
     4) Открываем конфиг hadoop и добавляем в конце: `nano ~/.profile`
     ```bash
-    export HIVE_HOME=/home/hadoop/apache-hive.4.0.1-bin
+    export HIVE_HOME=/home/hadoop/apache-hive-4.0.1-bin
     export HIVE_CONF_DIR=$HIVE_HOME/conf
     export HIVE_AUX_JARS_PATH=$HIVE_HOME/lib/*
     export PATH=$PATH:$HIVE_HOME/bin
