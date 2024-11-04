@@ -63,9 +63,9 @@ for ENTRY in "${HOSTS[@]}"; do
 
         # Command to create the user and set the password
         SSH_COMMAND="sudo useradd -m -s /bin/bash $NEW_USER && echo '$NEW_USER:$PASSWORD' | sudo chpasswd"
-
         # Execute the command on the remote server using HOST
         ssh -t "$TEAM_USER@$HOST" "$SSH_COMMAND"
+        check_success
 
         # Check if the user was created successfully
         if [ $? -eq 0 ]; then
@@ -75,10 +75,12 @@ for ENTRY in "${HOSTS[@]}"; do
             # Generate SSH key pair for the new user on remote machine without logging in via SSH
             SSH_KEY_GEN_COMMAND="sudo -u $NEW_USER ssh-keygen -t rsa -b 4096 -f /home/$NEW_USER/.ssh/id_rsa -N ''"
             ssh -t "$TEAM_USER@$HOST" "$SSH_KEY_GEN_COMMAND" || error_exit "Не удалось сгенерировать публичный ключ."
+            check_success
 
             # Copy public key from remote machine to local temporary file
             echo "Копирование публичного SSH-ключа для пользователя $NEW_USER на $HOSTNAME в временный файл..."
             sshpass -p "$PASSWORD" ssh -t "$NEW_USER@$HOST" "cat /home/$NEW_USER/.ssh/id_rsa.pub" >> "$TEMP_FILE" || error_exit "Не удалось скопировать ключ."
+            check_success
         else
             error_exit "Не удалось создать пользователя $NEW_USER на хосте $HOSTNAME."
         fi
@@ -92,10 +94,12 @@ for ENTRY in "${HOSTS[@]}"; do
             print_header "Генерация публичного SSH-ключа на $HOSTNAME для пользователя $NEW_USER..."
             # Generate SSH key pair for the new user on local machine
             sudo -u "$NEW_USER" ssh-keygen -t rsa -b 4096 -f "/home/$NEW_USER/.ssh/id_rsa" -N "" || error_exit "Не удалось сгенерировать ключ."
+            check_success
 
             # Copy public key to local temporary file
             echo "Копирование публичного SSH-ключа для пользователя $NEW_USER на $HOSTNAME в временный файл..."
             sudo -u "$NEW_USER" cat "/home/$NEW_USER/.ssh/id_rsa.pub" >> "$TEMP_FILE" || error_exit "Не удалось скопировать ключ."
+            check_success
         else
             error_exit "Не удалось создать пользователя $NEW_USER на хосте $HOSTNAME."
         fi
@@ -112,19 +116,23 @@ for ENTRY in "${HOSTS[@]}"; do
 
     print_header "Добавление созданных публичных ключей на $SERVER_HOST ..."
     if [[ "$SERVER_HOST" == "$LOCAL_HOST" ]]; then
-        sudo cp "$TEMP_FILE" "/home/$NEW_USER/.ssh/authorized_keys"
-        sudo cat "$HOSTS_FILE" >> /etc/hosts && sudo sed -i '/^127\.0\.0\.1/ s/^/#/' /etc/hosts && sudo sed -i '/^127\.0\.1\.1/ s/^/#/' /etc/hosts
+        sudo cp "$TEMP_FILE" "/home/$NEW_USER/.ssh/authorized_keys" || error_exit "Не удалось добавить ключ."
+        check_success
+        print_header "Копирование файла hosts.txt на $SERVER_HOST ..."
+        sudo cat "$HOSTS_FILE" >> /etc/hosts && sudo sed -i '/^127\.0\.0\.1/ s/^/#/' /etc/hosts && sudo sed -i '/^127\.0\.1\.1/ s/^/#/' /etc/hosts || error_exit "Не удалось скопировать файл hosts.txt."
+        check_success
     else
-        sshpass -p "$PASSWORD" scp "$TEMP_FILE" "$NEW_USER@$SERVER_IP:/home/$NEW_USER/.ssh/authorized_keys"
-
+        sshpass -p "$PASSWORD" scp "$TEMP_FILE" "$NEW_USER@$SERVER_IP:/home/$NEW_USER/.ssh/authorized_keys" || error_exit "Не удалось добавить ключ."
+        check_success
         # Copy hosts hosts.txt to temp file on remote host
         print_header "Копирование файла hosts.txt на $SERVER_HOST ..."
         scp "$HOSTS_FILE" "$TEAM_USER@$SERVER_IP:/tmp/" || error_exit "Не удалось скопировать файл hosts.txt."
-
+        check_success
         # Add all entries from hosts.txt to /etc/hosts on remote machine
         print_header "Копирование содержимого файла host.txt в /etc/hosts на $SERVER_HOST ..."
         ADD_AND_EDIT_HOSTS_COMMAND="sudo bash -c 'cat /tmp/$(basename "$HOSTS_FILE") >> /etc/hosts' && sudo sed -i '/^127\.0\.0\.1/ s/^/#/' /etc/hosts && sudo sed -i '/^127\.0\.1\.1/ s/^/#/' /etc/hosts"
         ssh -t "$TEAM_USER@$SERVER_IP" "$ADD_AND_EDIT_HOSTS_COMMAND" || error_exit "Не удалось скопировать содержимое."
+        check_success
     fi
 
 done
