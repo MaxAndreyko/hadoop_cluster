@@ -47,11 +47,12 @@ read -p "Введите имя пользователя для metastore: " META
 read -sp "Введите пароль для пользователя metastore $METASTORE_USER: " METASTORE_PASSWORD
 echo
 
-HIVE_SITE_PATH="\$HIVE_HOME/conf/hive-site.xml"
+HIVE_HOME=$(sudo -u "$SSH_USER" bash -c "source ~/.profile; echo \$HIVE_HOME")
+HIVE_SITE_PATH="$HIVE_HOME/conf/hive-site.xml"
 
 # Проверка наличия hive-site.xml
 print_header "Проверка наличия hive-site.xml ..."
-sudo -u "$SSH_USER" << EOF
+sudo -u "$SSH_USER" bash << EOF
 if [ -f $HIVE_SITE_PATH ]; then
     echo "Файл существует, очищаем содержимое..."
     > $HIVE_SITE_PATH
@@ -65,7 +66,11 @@ check_success
 THIFT_PORT="5433"
 ABS_METASTORE_ADDRESS="hdfs://$NN_HOSTNAME:9000$HDFS_WAREHOUSE" # HDFS_WAREHOUSE variable is already with / in the beginning
 
-HIVE_SITE="<configuration>
+print_header "Запись конфигурации в файл hive-site.xml ..."
+
+sudo -u "$SSH_USER" bash << EOF
+cat > "$HIVE_SITE_PATH" << 'EOL'
+<configuration>
     <property>
         <name>hive.server2.authentication</name>
         <value>NONE</value>
@@ -92,13 +97,15 @@ HIVE_SITE="<configuration>
         <value>$METASTORE_USER</value>
     </property>
     <property>
-        <name> javax.jdo.option.ConnectionPassword</name>
+        <name>javax.jdo.option.ConnectionPassword</name>
         <value>$METASTORE_PASSWORD</value>
     </property>
-</configuration>"
+</configuration>
+EOL
+EOF
 
-print_header "Запись конфигурации в файл hive-site.xml ..."
-sudo -u "$SSH_USER" "echo $HIVE_SITE >> $HIVE_SITE_PATH" || error_exit "Не удалось записать конфигурацию в hive-site.xml"
+
+# sudo -u "$SSH_USER" bash -c "echo $HIVE_SITE >> $HIVE_SITE_PATH" || error_exit "Не удалось записать конфигурацию в hive-site.xml"
 check_success
 
 # Установка PostgreSQL
@@ -113,6 +120,20 @@ ssh -t "$TEAM_USER@$NN_HOSTNAME" "
 " || error_exit "Не удалось проверить установку PostgreSQL"
 check_success
 
+PG_USER="postgres"
+HIVE_DB="metastore"
+# Настройка базы данных
+print_header "Настройка базы данных PostgreSQL..."
+ssh -t "$TEAM_USER@$NN_HOSTNAME" "
+    sudo -u $PG_USER bash -c 'psql <<EOF
+CREATE DATABASE $HIVE_DB;
+CREATE USER $METASTORE_USER WITH PASSWORD '\''$METASTORE_PASSWORD'\'';
+GRANT ALL PRIVILEGES ON DATABASE $HIVE_DB TO $METASTORE_USER;
+ALTER DATABASE $HIVE_DB OWNER TO $METASTORE_USER;
+EOF'
+" || error_exit "Не удалось настроить базу данных PostgreSQL"
+check_success
+
 # Проверка и настройка listen_addresses в postgresql.conf
 print_header "Настройка listen_addresses в postgresql.conf на нейм-ноде..."
 ssh -t "$TEAM_USER@$NN_HOSTNAME" "
@@ -122,43 +143,37 @@ check_success
 
 print_header "Настройка pg_hba.conf для аутентификации ..."
 
-NEW_LINE="host  metastore    $METASTORE_USER    192.168.1.18/32      password"
+NEW_LINE="host    metastore       hive            192.168.1.18/32         password"
 
 ssh -t "$TEAM_USER@$NN_HOSTNAME" "
-    sudo sed -i "/# IPv4 local connections/a $NEW_LINE /etc/postgresql/*/main/pg_hba.conf" &&
+    sudo sed -i \"/# IPv4 local connections/a $NEW_LINE\" /etc/postgresql/*/main/pg_hba.conf &&
     sudo systemctl restart postgresql
 " || error_exit "Не удалось настроить pg_hba.conf"
 check_success
 
-PG_USER="postgres"
-HIVE_DB="metastore"
-# Настройка базы данных
-print_header "Настройка базы данных PostgreSQL..."
-ssh "$PG_USER@$NN_HOSTNAME" "
-    psql -c \"CREATE DATABASE $HIVE_DB;\" &&
-    psql -c \"CREATE USER $METASTORE_USER WITH PASSWORD '$METASTORE_PASSWORD';\" &&
-    psql -c \"GRANT ALL PRIVILEGES ON DATABASE $HIVE_DB TO $METASTORE_USER;\"
-" || error_exit "Не удалось настроить базу данных PostgreSQL"
-check_success
-
-# Установка HDFS FDW
-print_header "Установка HDFS FDW для PostgreSQL..."
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@192.168.1.19" "
-    git clone https://github.com/EnterpriseDB/hdfs_fdw.git ~/hdfs_fdw &&
-    cd ~/hdfs_fdw &&
-    make &&
-    sudo make install &&
-    sudo -u postgres psql -d hive_metastore -c \"CREATE EXTENSION hdfs_fdw;\"
-" || error_exit "Не удалось установить HDFS FDW"
-check_success
-
 echo -e "\e[32mНастройка завершена успешно\e[0m"
 
-
-HADOOP_HOME=$(sudo -u "$SSH_USER" "source ~/.profile; echo \$HADOOP_HOME")
+HADOOP_HOME=$(sudo -u "$SSH_USER" bash -c "source ~/.profile; echo \$HADOOP_HOME")
 HDFS="$HADOOP_HOME/bin/hdfs"
 
 # Creating HDFS directories
 create_hdf_dir_if_not_exists "$HDFS_TEMP" "$SSH_USER" "$NN_HOSTNAME" "$HDFS"
 create_hdf_dir_if_not_exists "$HDFS_WAREHOUSE" "$SSH_USER" "$NN_HOSTNAME" "$HDFS"
 create_hdf_dir_if_not_exists "$HDFS_INPUT" "$SSH_USER" "$NN_HOSTNAME" "$HDFS"
+
+print_header "Инициализация схемы данных ..."
+sudo -u "$SSH_USER" bash -c "source ~/.profile; $HIVE_HOME/bin/schematool -dbType postgres -initSchema" || error_exit "Не удалось установить клиент."
+check_success
+
+print_header "Установка PostgreSQL клиента на джамп-ноду ..."
+sudo apt install -y postgresql-client-16 || error_exit "Не удалось установить клиент."
+check_success
+
+print_header "Запуск Hive ..."
+sudo -u "$SSH_USER" bash -c "source ~/.profile; $HIVE_HOME/bin/hive \
+    --hiveconf hive.server2.enable.doAs=false \
+    --hiveconf hive.security.authorization.enabled=false \
+    --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log &"
+sleep 5
+
+print_header "К Hive добавлен metastore"
