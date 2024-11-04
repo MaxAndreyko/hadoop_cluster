@@ -36,7 +36,7 @@ HADOOP_CONFIG_DIR="/home/$SSH_USER/hadoop-3.4.0/etc/hadoop"
 print_header "Настройка конфигурационных файлов на нейм-ноду (team-4-nn)"
 
 # Настройка mapred-site.xml для History Server
-sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo '<configuration>
+ssh "$SSH_USER@team-4-nn" "echo '<configuration>
 <property>
     <name>mapreduce.framework.name</name>
     <value>yarn</value>
@@ -49,7 +49,7 @@ sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo '<configuration>
 check_success
 
 # Настройка yarn-site.xml для YARN
-sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo '<configuration>
+ssh "$SSH_USER@team-4-nn" "echo '<configuration>
 <property>
     <name>yarn.nodemanager.aux-services</name>
     <value>mapreduce_shuffle</value>
@@ -82,23 +82,23 @@ done
 
 # Запуск YARN и History Server на нейм-ноде
 print_header "Запуск YARN и History Server на нейм-ноде"
-sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "cd /home/$SSH_USER/hadoop-3.4.0 && sbin/start-yarn.sh && mapred --daemon start historyserver" || error_exit "Не удалось запустить YARN и History Server."
+ssh "$SSH_USER@team-4-nn" "cd /home/$SSH_USER/hadoop-3.4.0 && sbin/start-yarn.sh && bin/mapred --daemon start historyserver" || error_exit "Не удалось запустить YARN и History Server."
 check_success
 
 # Установить apache2-utils на джамп-ноде
 print_header "Установка apache2-utils"
-sshpass -p "$SSH_PASS" ssh team@team-4-jn "dpkg -l | grep -q apache2-utils || (sudo apt update && sudo apt install -y apache2-utils)" || error_exit "Не удалось установить apache2-utils."
+ssh -t team@team-4-jn "dpkg -l | grep -q apache2-utils || (sudo apt update && sudo apt install -y apache2-utils)" || error_exit "Не удалось установить apache2-utils."
 check_success
 
 # Создать директорию для хранения паролей
 print_header "Создание директории для хранения паролей"
-sshpass -p "$SSH_PASS" ssh team@team-4-jn "[ -d /etc/team4passwd ] || sudo mkdir -p /etc/team4passwd" || error_exit "Не удалось создать директорию для хранения паролей."
+ssh -t team@team-4-jn "[ -d /etc/team4passwd ] || sudo mkdir -p /etc/team4passwd" || error_exit "Не удалось создать директорию для хранения паролей."
 check_success
 
 # Настройка пароля для доступа к веб-интерфейсу
 print_header "Настройка пароля для доступа к веб-интерфейсу"
 read -p "Введите имя пользователя для веб-интерфейса: " WEB_USER
-sshpass -p "$SSH_PASS" ssh team@team-4-jn "sudo htpasswd -c /etc/team4passwd/.htpasswd $WEB_USER" || error_exit "Не удалось настроить пароль для веб-интерфейса."
+ssh -t team@team-4-jn "sudo htpasswd -c /etc/team4passwd/.htpasswd $WEB_USER" || error_exit "Не удалось настроить пароль для веб-интерфейса."
 check_success
 
 # Настройка nginx на джамп-ноде для проксирования веб-интерфейсов
@@ -114,32 +114,26 @@ for SITE in "${!NGINX_SITES[@]}"; do
     PORT="${NGINX_SITES[$SITE]}"
     CONF_FILE="$NGINX_DIR/$SITE"
     print_header "Создание конфигурации $CONF_FILE для порта $PORT"
-    
-    # Копирование дефолтного файла конфигурации
-    sshpass -p "$SSH_PASS" ssh team@team-4-jn "sudo cp /etc/nginx/sites-available/default \"$CONF_FILE\"" || error_exit "Не удалось скопировать дефолтный конфигурационный файл для $SITE."
-    check_success
 
     # Настройка конфигурационного файла для соответствующего веб-интерфейса
-    sshpass -p "$SSH_PASS" ssh team@team-4-jn "echo 'server {
+    ssh -t team@team-4-jn "echo 'server {
     listen $PORT default_server;
     location / {
         proxy_pass http://team-4-nn:$PORT;
         auth_basic           \"Administrator’s Area\";
         auth_basic_user_file /etc/team4passwd/.htpasswd;
     }
-}' | sudo tee -a \"$CONF_FILE\" > /dev/null" || error_exit "Не удалось настроить конфигурацию nginx для $SITE."
+}' | sudo tee \"$CONF_FILE\" > /dev/null" || error_exit "Не удалось настроить конфигурацию nginx для $SITE."
     check_success
     
     # Создаем симлинк для активации
-    sshpass -p "$SSH_PASS" ssh team@team-4-jn "sudo ln -s \"$CONF_FILE\" \"/etc/nginx/sites-enabled/$SITE\"" || error_exit "Не удалось создать симлинк для $SITE."
+    ssh -t team@team-4-jn "sudo ln -s \"$CONF_FILE\" \"/etc/nginx/sites-enabled/$SITE\"" || error_exit "Не удалось создать симлинк для $SITE."
     check_success
 done
 
 # Перезагружаем nginx для применения конфигурации
 print_header "Перезагрузка nginx"
-sshpass -p "$SSH_PASS" ssh team@team-4-jn "sudo systemctl reload nginx" || error_exit "Не удалось перезагрузить nginx."
+ssh -t team@team-4-jn "sudo systemctl reload nginx" || error_exit "Не удалось перезагрузить nginx."
 check_success
 
 print_header "Завершение автоматической настройки и запуска веб-интерфейсов."
-
-
