@@ -3,7 +3,7 @@
 ### I. Подготовка к запуску скриптов
 Переходим в папку со скриптами `hadoop_cluster/scripts/task1` к ПЗ №1 и делаем их исполняемыми:
 ```bash
-cd hadoop_cluster/scripts/task1 && chmod +x ./*.sh
+cd ~/hadoop_cluster/scripts/task1 && chmod +x ./*.sh
 ```
 ### II. Создание подключения по SSH
 1. Для создания подключения по ssh запускаем скрипт `create_users.sh`:
@@ -25,7 +25,7 @@ sudo ./hadoop_setup.sh
 ### I. Подготовка к запуску скриптов
 Переходим в папку со скриптами `hadoop_cluster/scripts/task2` к ПЗ №2 и делаем их исполняемыми:
 ```bash
-cd hadoop_cluster/scripts/task2 && chmod +x ./*.sh
+cd ~/hadoop_cluster/scripts/task2 && chmod +x ./*.sh
 ```
 ### II. Настройка и запуск веб-интерфейсов (ResourceManager, NodeManager, History Server)
 1. Для разворачивания hadoop запускаем скрипт `yarn_setup.sh`:
