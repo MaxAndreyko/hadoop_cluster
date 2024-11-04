@@ -93,3 +93,5 @@ FROM test.ufo_sightings WHERE month_count IS NOT NULL;
 SHOW PARTITIONS test.partitioned_ufo;
 EOF'
 check_success
+
+print_header "Завершение автоматической загрузки и трансформации данных."

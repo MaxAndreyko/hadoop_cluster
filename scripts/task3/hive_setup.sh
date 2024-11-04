@@ -91,4 +91,4 @@ export HIVE_AUX_JARS_PATH=$HIVE_DIR/lib/*
 EOF" || error_exit "Не удалось добавить переменные."
 check_success
 
-print_header "Установка Hive завершена."
+print_header "Завершение автоматической установки hive."

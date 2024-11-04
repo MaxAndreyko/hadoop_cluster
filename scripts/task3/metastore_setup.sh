@@ -176,4 +176,4 @@ sudo -u "$SSH_USER" bash -c "source ~/.profile; $HIVE_HOME/bin/hive \
     --service hiveserver2 1>> /tmp/hs2.log 2>> /tmp/hs2.log &"
 sleep 5
 
-print_header "К Hive добавлен metastore"
+print_header "Завершение автоматической настройки metastore."
