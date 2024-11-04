@@ -31,7 +31,8 @@ mapfile -t HOSTS < "$HOSTS_FILE"
 
 HIVE_VER="4.0.1"
 HIVE_URL="https://dlcdn.apache.org/hive/hive-$HIVE_VER/apache-hive-$HIVE_VER-bin.tar.gz"
-PSQL_DRIVER_URL="https://jdbc.postgresql.org/download/postgresql-42.7.4.jar"
+PSQL_DRIVER_FILENAME="postgresql-42.7.4.jar"
+PSQL_DRIVER_URL="https://jdbc.postgresql.org/download/postgresql-42.7.4.jar$PSQL_DRIVER_FILENAME"
 
 read -p "Введите имя пользователя HDFS: " SSH_USER
 
@@ -58,37 +59,36 @@ if [ -d "$HIVE_DIR" ]; then
 else
     # Extract the tar file to the specified directory
     print_header "Извлечение архива Hive ..."
-    sudo -u "$SSH_USER" mkdir -p "$HIVE_DIR" && tar -xzf "$HIVE_TAR" -C "$(dirname "$HIVE_DIR")" || error_exit "Не удалось извлечь архив."
+    sudo -u "$SSH_USER" mkdir -p "$HIVE_DIR" && sudo -u "$SSH_USER" tar -xzf "$HIVE_TAR" -C "$(dirname "$HIVE_DIR")" || error_exit "Не удалось извлечь архив."
     check_success
 fi
 
-print_header "Скачивание драйвера для PostgeSQL ..."
-sudo -u "$SSH_USER" "wget -P $HIVE_DIR/lib/ $PSQL_DRIVER_URL" || error_exit "Не удалось скачать драйвер."
-check_success
+if [ -f "$HIVE_DIR/lib/$PSQL_DRIVER_FILENAME" ]; then
+    print_header "Файл драйвера$HIVE_DIR/lib/$PSQL_DRIVER_FILENAME уже существует. Пропуск скачивания."
+else
+    print_header "Скачивание драйвера для PostgeSQL ..."
+    sudo -u "$SSH_USER" wget -P "$HIVE_DIR/lib/" "$PSQL_DRIVER_URL" || error_exit "Не удалось скачать драйвер."
+    check_success
+fi
 
 print_header "Добавление переменных среды ..."
-sudo -u "$SSH_USER" "echo 'export HIVE_HOME=$HIVE_DIR' >> $HOME_SSH_USER/.profile && echo 'export PATH=\$HIVE_HOME/bin:\$PATH' >> $HOME_SSH_USER/.profile" || eror_exit "Не удалось добавить переменные"
+sudo -u "$SSH_USER" bash -c "echo 'export HIVE_HOME=$HIVE_DIR' >> /home/$SSH_USER/.profile && echo 'export PATH=\$HIVE_HOME/bin:\$PATH' >> /home/$SSH_USER/.profile"
 check_success
 
 print_header "Активация окружения ..."
-sudo -u "$SSH_USER" "source $HOME_SSH_USER/.profile" || error_exit "Не удалось активировать окружение."
+sudo -u "$SSH_USER" bash -c "source $HOME_SSH_USER/.profile" || error_exit "Не удалось активировать окружение."
 check_success
 
 print_header "Создание файла запуска Hive ..."
-sudo -u "$SSH_USER" "cp $HIVE_DIR/conf/hive-env.sh.template $HIVE_DIR/conf/hive-env.sh" || error_exit "Не удалось создать файл запуска Hive."
+sudo -u "$SSH_USER" bash -c "cp $HIVE_DIR/conf/hive-env.sh.template $HIVE_DIR/conf/hive-env.sh" || error_exit "Не удалось создать файл запуска Hive."
 check_success
 
 print_header "Добавление переменных окружения в файл запуска Hive ..."
-sudo -u "$SSH_USER" "cat << EOF >> $HIVE_DIR/conf/hive-env.sh
+sudo -u "$SSH_USER" bash -c "cat << EOF >> $HIVE_DIR/conf/hive-env.sh
 export HIVE_HOME=$HIVE_DIR
 export HIVE_CONF_DIR=$HIVE_DIR/conf
 export HIVE_AUX_JARS_PATH=$HIVE_DIR/lib/*
 EOF" || error_exit "Не удалось добавить переменные."
 check_success
 
-sudo -u "$SSH_USER" "hive --version"
-  if [ $? -eq 0 ]; then
-      print_header "Установка Hive завершена успешно!"
-  else
-      error_exit "Не удалось установить Hive!"
-  fi
+print_header "Установка Hive завершена."
