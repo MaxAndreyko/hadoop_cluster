@@ -66,7 +66,7 @@ for ENTRY in "${HOSTS[@]}"; do
         echo -e "\e[32mАрхив уже существует на $SERVER_HOST ($SERVER_IP), пропускаем копирование.\e[0m"
     else
         print_header "Копируем hadoop-3.4.0.tar.gz на $SERVER_HOST ($SERVER_IP)..."
-        sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$HADOOP_TAR" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/hadoop-3.4.0.tar.gz" || error_exit "Не удалось скопировать архив на $SERVER_HOST"
+        sudo -u $SSH_USER scp "$HADOOP_TAR" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/hadoop-3.4.0.tar.gz" || error_exit "Не удалось скопировать архив на $SERVER_HOST"
         check_success
     fi
 done
@@ -107,9 +107,9 @@ check_success
 
 # Настройка переменных среды на нейм-ноде
 print_header "Настройка переменных среды на нейм-ноде..."
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> /home/$SSH_USER/.profile"
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export HADOOP_HOME=$HADOOP_DIR' >> /home/$SSH_USER/.profile"
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER ssh "$SSH_USER@team-4-nn" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER ssh "$SSH_USER@team-4-nn" "echo 'export HADOOP_HOME=$HADOOP_DIR' >> /home/$SSH_USER/.profile"
+sudo -u $SSH_USER ssh "$SSH_USER@team-4-nn" "echo 'export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin' >> /home/$SSH_USER/.profile"
 check_success
 
 # Копирование файла ~/.profile на все ноды
@@ -123,7 +123,7 @@ for ENTRY in "${HOSTS[@]}"; do
     fi
 
     print_header "Копируем файл .profile на $SERVER_HOST ($SERVER_IP)..."
-    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@team-4-nn:/home/$SSH_USER/.profile" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/.profile" || error_exit "Не удалось скопировать .profile на $SERVER_HOST"
+    sudo -u $SSH_USER scp "$SSH_USER@team-4-nn:/home/$SSH_USER/.profile" "$SSH_USER@$SERVER_IP:/home/$SSH_USER/.profile" || error_exit "Не удалось скопировать .profile на $SERVER_HOST"
     check_success
 done
 
@@ -134,7 +134,7 @@ check_success
 
 # Добавление JAVA_HOME в hadoop-env.sh на нейм-ноде
 print_header "Добавление JAVA_HOME в hadoop-env.sh на нейм-ноде..."
-sudo -u $SSH_USER sshpass -p "$SSH_PASS" ssh "$SSH_USER@team-4-nn" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh"
+sudo -u $SSH_USER ssh "$SSH_USER@team-4-nn" "echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64' >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh"
 check_success
 
 # Копирование файла hadoop-env.sh на все дата-нод
@@ -148,7 +148,7 @@ for ENTRY in "${HOSTS[@]}"; do
     fi
     
     print_header "Копируем hadoop-env.sh на $SERVER_HOST ($SERVER_IP)..."
-    sudo -u $SSH_USER sshpass -p "$SSH_PASS" scp "$SSH_USER@team-4-nn:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" || error_exit "Не удалось скопировать hadoop-env.sh на $SERVER_HOST"
+    sudo -u $SSH_USER scp "$SSH_USER@team-4-nn:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" "$SSH_USER@$SERVER_IP:$HADOOP_DIR/etc/hadoop/hadoop-env.sh" || error_exit "Не удалось скопировать hadoop-env.sh на $SERVER_HOST"
     check_success
 done
 
