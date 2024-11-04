@@ -189,7 +189,7 @@ hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authoriz
 ```
 15. Запуск консоли beeline:
 ```bash
-beeline -u jdbc:hive2://localhost:5433
+beeline -u jdbc:hive2://team-4-jn:5433
 ```
 ## VI. Работа с базой данных
 1. Заходим на джампноду
@@ -200,7 +200,7 @@ beeline -u jdbc:hive2://localhost:5433
 6. Проверяем информацию о блоках файла: `hdfs fsck /input/<file_name>`
 7. Запуск консоли beeline:
 ```bash
-beeline -u jdbc:hive2://localhost:5433
+beeline -u jdbc:hive2://team-4-jn:5433
 ```
 7. Создаем базу данных: `CREATE DATABASE test;`
 8. Переключиться на созданную БД: `use test;`
