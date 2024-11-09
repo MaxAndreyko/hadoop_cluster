@@ -43,21 +43,30 @@ sudo ./web_setup.sh
 4. При успешном выполнении всех команд скрипта в терминале должно отобразиться `"Завершение автоматической настройки и запуска веб-интерфейсов."`.
 > [!NOTE]
 > После успешного выполнения скрипта появится возможность воспользоваться веб-интерфейсами, которые доступны по адресами (при прокидывании портов через конфигурационный файл ssh, см. [инструкцию](https://github.com/MaxAndreyko/hadoop_cluster/blob/main/README.md#прокидывание-портов-через-ssh)):
-> - `http://localhost:9870` — Hadoop Cluster
-> - `http://localhost:8088` — YARN
-> - `http://localhost:19888` — History Server
-### Прокидывание портов через ssh
-В файл конфигурации подключения через ssh необходимо добавить `LocalForward <port>  127.0.0.1:<port>`, где <port> - порт, который необходимо "прокинуть".
-Например:
-```
-Host <host>
-  HostName <hostname>
-  User team
-  IdentityFile <path to identity file>
-  LocalForward 9870  127.0.0.1:9870
-  LocalForward 8088  127.0.0.1:8088
-  LocalForward 19888  127.0.0.1:19888
-```
+> - Hadoop Cluster: 
+> ```
+> http://localhost:9870
+> ```
+> - YARN:
+> ```
+> http://localhost:8088
+> ```
+> - History Server:
+> ```
+> http://localhost:19888
+> ```
+> ### Прокидывание портов через ssh
+> В файл конфигурации подключения через ssh необходимо добавить `LocalForward <port>  127.0.0.1:<port>`, где <port> - порт, который необходимо "прокинуть".
+>  Например:
+> ```
+> Host <host>
+> HostName <hostname>
+> User team
+>   IdentityFile <path to identity file>
+>   LocalForward 9870  127.0.0.1:9870
+>   LocalForward 8088  127.0.0.1:8088
+>   LocalForward 19888  127.0.0.1:19888
+> ```
 
 ## ПЗ №3 - Hive + PostgreSQL
 ### I. Подготовка к запуску скриптов
