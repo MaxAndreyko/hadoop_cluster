@@ -113,7 +113,7 @@ print_header "Установка PostgreSQL на нейм-ноде..."
 ssh -t "$TEAM_USER@$NN_HOSTNAME" "
     if ! which psql > /dev/null; then
         echo 'PostgreSQL не установлен, начинаем установку...'
-        sudo apt-get install -y postgresql
+        sudo apt-get update && sudo apt-get install -y postgresql
     else
         echo 'PostgreSQL уже установлен'
     fi
