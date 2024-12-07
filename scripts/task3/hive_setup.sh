@@ -32,7 +32,7 @@ mapfile -t HOSTS < "$HOSTS_FILE"
 HIVE_VER="4.0.1"
 HIVE_URL="https://dlcdn.apache.org/hive/hive-$HIVE_VER/apache-hive-$HIVE_VER-bin.tar.gz"
 PSQL_DRIVER_FILENAME="postgresql-42.7.4.jar"
-PSQL_DRIVER_URL="https://jdbc.postgresql.org/download/postgresql-42.7.4.jar$PSQL_DRIVER_FILENAME"
+PSQL_DRIVER_URL="https://jdbc.postgresql.org/download/$PSQL_DRIVER_FILENAME"
 
 read -p "Введите имя пользователя HDFS: " SSH_USER
 
