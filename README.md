@@ -1,7 +1,7 @@
 # Алгоритм запуска скриптов ПЗ №1-3
 > [!IMPORTANT]
 > - Перед началом работы необходимо склонировать репозиторий со скриптами на джампноде командой:  
-> `git clone https://github.com/MaxAndreyko/hadoop_cluster/tree/main`;
+> `git clone https://github.com/MaxAndreyko/hadoop_cluster.git`;
 > - Если во время выполнения скриптов появится запрос на ввод пароля от `sudo`/`team` в терминале, укажите его.
 
 ## ПЗ №1 - Hadoop
