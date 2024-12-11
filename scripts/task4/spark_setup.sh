@@ -22,11 +22,10 @@ print_header() {
 
 # Ввод имени пользователя и пароля для каждого сервера
 read -p "Введите имя пользователя для подключения: " SSH_USER
-read -sp "Введите пароль для пользователя $SSH_USER: " SSH_PASS
 echo
 
 # Ссылка на дистрибутив Spark
-SPARK_URL="ttps://dlcdn.apache.org/spark/spark-3.5.3/spark-3.5.3-bin-hadoop3.tgz"
+SPARK_URL="https://dlcdn.apache.org/spark/spark-3.5.3/spark-3.5.3-bin-hadoop3.tgz"
 SPARK_TGZ="spark-3.5.3-bin-hadoop3.tgz"
 SPARK_DIR="/home/$SSH_USER/spark-3.5.3-bin-hadoop3"
 
@@ -63,7 +62,7 @@ EOF
 print_header "Настройка переменных среды на неймноде..."
 sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" <<EOF
     echo "export HADOOP_CONF_DIR=\$HADOOP_HOME/etc/hadoop" >> ~/.profile
-    echo "export SPARK_HOME=/home/$SSH_USER/spark-3.5.3-bin-hadoop3" >> ~/.profile
+    echo "export SPARK_HOME=$SPARK_DIR" >> ~/.profile
     echo "export PATH=\$PATH:\$SPARK_HOME/bin" >> ~/.profile
     echo "export SPARK_DIST_CLASSPATH=\$SPARK_HOME/jars/*:\$(hadoop classpath)" >> ~/.profile
     source ~/.profile
@@ -73,11 +72,11 @@ check_success
 # Запись конфигурации в файл hive-site.xml
 print_header "Запись конфигурации в файл hive-site.xml ..."
 sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" bash <<EOF
-if [ ! -f "$SPARK_HOME/conf/hive-site.xml" ]; then
-    touch "$SPARK_HOME/conf/hive-site.xml"
+if [ ! -f "$SPARK_DIR/conf/hive-site.xml" ]; then
+    touch "$SPARK_DIR/conf/hive-site.xml"
 fi
 
-cat > "$SPARK_HOME/conf/hive-site.xml" <<EOL
+cat > "$SPARK_DIR/conf/hive-site.xml" <<EOL
 <configuration>
     <property>
         <name>hive.metastore.schema.verification</name>
@@ -88,14 +87,15 @@ EOL
 EOF
 check_success
 
+HIVE_HOME=$(sudo -u "$SSH_USER" bash -c "source ~/.profile; echo \$HIVE_HOME")
 # Запуск метастора Hive на джамп-ноде
 print_header "Запуск метастора Hive на джамп-ноде..."
-if pgrep -f "HiveMetastore" > /dev/null; then
-    echo -e "\e[32mМетастор Hive уже запущен, пропускаем шаг.\e[0m"
-else
-    nohup hive --hiveconf hive.server2.enable.doAs=false --hiveconf hive.security.authorization.enabled=false --service metastore 1>> /tmp/metastore.log 2>> /tmp/metastore.log & || error_exit "Не удалось запустить метастора Hive"
-    check_success
-fi
+sudo -u "$SSH_USER" bash -c "source ~/.profile; $HIVE_HOME/bin/hive \
+    --hiveconf hive.server2.enable.doAs=false \
+    --hiveconf hive.security.authorization.enabled=false \
+    --service metastore 1>> /tmp/metastore.log 2>> /tmp/metastore.log &"
+sleep 5
+check_success
 
 # Установка Python
 print_header "Установка Python на неймноде..."
@@ -113,7 +113,6 @@ sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" <<EOF
     source ~/.profile
     if [ ! -d ".venv" ]; then
         python3 -m venv .venv || error_exit "Не удалось создать виртуальное окружение"
-        check_success
     else
         echo "Виртуальное окружение уже существует, пропускаем создание."
     fi
@@ -121,15 +120,22 @@ sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" <<EOF
     check_success
     if ! pip list | grep -q pyspark; then
         pip install pyspark || error_exit "Не удалось установить pyspark"
-        check_success
     else
         echo "pyspark уже установлен, пропускаем установку."
     fi
-    check_success
 EOF
+check_success
 
 print_header "Загружаем данные в HDFS..."
-sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" "hdfs dfs -put /home/$SSH_USER/ufo_sightings.csv /input" || error_exit "Не удалось загрузить данные в HDFS."
+HADOOP_HOME=$(sudo -u "$SSH_USER" bash -c "source ~/.profile; echo \$HADOOP_HOME")
+HDFS="$HADOOP_HOME/bin/hdfs"
+CSV_PATH="/input/ufo_sightings.csv"
+if sudo -u $SSH_USER ssh "$SSH_USER@team-4-nn" "$HDFS dfs -test -f $CSV_PATH"; then
+    echo "CSV файл с данными $CSV_PATH уже существует."
+else
+    echo "CSV файл с данными $CSV_PATH не существует. Добавление файла ..."
+    sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" "$HDFS dfs -put /home/$SSH_USER/ $CSV_PATH" || error_exit "Не удалось загрузить данные в HDFS."
+fi
 check_success
 
 # Создание исполняемого Python файла на NameNode
@@ -171,6 +177,7 @@ df_transformed = df.groupBy("year").agg(
     )).alias("avg_days_diff")
 )
 
+print("Вывод преобразованных данных")
 # Вывод преобразованных данных
 df_transformed.show()
 
@@ -186,8 +193,12 @@ df_transformed.write \\
 df_transformed.write \\
     .partitionBy("year") \\
     .mode("overwrite") \\
-    .saveAsTable("ufo_analysis_table")
+    .saveAsTable("test.ufo_analysis_table")
 PYTHON_SCRIPT
 EOF
 check_success
-
+SSH_USER_HOME=/home/$SSH_USER
+sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" << EOF
+source $SSH_USER_HOME/.venv/bin/activate
+python3 $SSH_USER_HOME/run_spark_job.py
+EOF
