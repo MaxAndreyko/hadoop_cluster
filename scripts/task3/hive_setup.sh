@@ -29,8 +29,8 @@ NN_HOSTNAME="team-4-nn"
 HOSTS_FILE="$(dirname "$0")/hosts.txt"
 mapfile -t HOSTS < "$HOSTS_FILE"
 
-HIVE_VER="4.0.1"
-HIVE_URL="https://dlcdn.apache.org/hive/hive-$HIVE_VER/apache-hive-$HIVE_VER-bin.tar.gz"
+HIVE_VER="4.0.0-alpha-2"
+HIVE_URL="https://archive.apache.org/dist/hive/hive-$HIVE_VER/apache-hive-$HIVE_VER-bin.tar.gz"
 PSQL_DRIVER_FILENAME="postgresql-42.7.4.jar"
 PSQL_DRIVER_URL="https://jdbc.postgresql.org/download/$PSQL_DRIVER_FILENAME"
 
