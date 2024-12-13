@@ -35,7 +35,7 @@ cd ~/hadoop_cluster/scripts/task2 && chmod +x ./*.sh
 > [!IMPORTANT]
 > - Во время выполнения скрипта появится запрос в терминале на ввод имени пользователя и пароля для доступа к веб-интерфейсу.
 > - Придумайте имя пользователя и пароль. Запомните эти данные, чтобы в дальнейшем авторизироваться в веб-интерфейсе. 
-1. Для разворачивания hadoop запускаем скрипт `web_setup.sh`:
+1. Для запуска веб-интерфейсов запускаем скрипт `web_setup.sh`:
 ```bash
 sudo ./web_setup.sh
 ```
@@ -75,14 +75,14 @@ sudo ./web_setup.sh
 cd ~/hadoop_cluster/scripts/task3 && chmod +x ./*.sh
 ```
 ### II. Установка Hive
-1. Для создания подключения по ssh запускаем скрипт `hive_setup.sh`:
+1. Для установки hive по ssh запускаем скрипт `hive_setup.sh`:
 ```bash
 sudo ./hive_setup.sh
 ```
 2. Далее необходимо ввести имя пользователя, созданного в [ПЗ№1, п.2](https://github.com/MaxAndreyko/hadoop_cluster/tree/main?tab=readme-ov-file#ii-%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D1%8F-%D0%BF%D0%BE-ssh).
 3. При успешном выполнении всех команд скрипта в терминале должно отобразиться `"Завершение автоматической установки hive."`.
 ### III. Настройка metastore
-1. Для разворачивания hadoop запускаем скрипт `metastore_setup.sh`:
+1. Для настройки metastore PostgreSQL запускаем скрипт `metastore_setup.sh`:
 ```bash
 sudo ./metastore_setup.sh
 ```
@@ -90,7 +90,7 @@ sudo ./metastore_setup.sh
 3. Далее необходимо ввести имя пользователя для доступа к базе метаданных (например, `hive`) и пароль к нему.
 4. При успешном выполнении всех команд скрипта в терминале должно отобразиться `"Завершение автоматической настройки metastore."`.
 ### IV. Загрузка и трансформация данных
-1. Для разворачивания hadoop запускаем скрипт `transform_data.sh`:
+1. Для загрузки и обработки данных запускаем скрипт `transform_data.sh`:
 ```bash
 sudo ./transform_data.sh
 ```
@@ -105,7 +105,7 @@ sudo ./transform_data.sh
 cd ~/hadoop_cluster/scripts/task4 && chmod +x ./*.sh
 ```
 ### II. Установка Spark и работа с данными
-1. Для создания подключения по ssh запускаем скрипт `spark_setup.sh`:
+1. Для установки spark запускаем скрипт `spark_setup.sh`:
 ```bash
 sudo ./spark_setup.sh
 ```
