@@ -202,3 +202,5 @@ sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" << EOF
 source $SSH_USER_HOME/.venv/bin/activate
 python3 $SSH_USER_HOME/run_spark_job.py
 EOF
+
+print_header "Завершение автоматической установки spark и получение результирующего набора данных."
