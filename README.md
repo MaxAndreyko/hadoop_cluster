@@ -100,7 +100,7 @@ sudo ./transform_data.sh
 
 ## ПЗ №4 - Spark
 ### I. Подготовка к запуску скриптов
-Переходим в папку со скриптами `hadoop_cluster/scripts/task4` к ПЗ №3 и делаем их исполняемыми:
+Переходим в папку со скриптами `hadoop_cluster/scripts/task4` к ПЗ №4 и делаем их исполняемыми:
 ```bash
 cd ~/hadoop_cluster/scripts/task4 && chmod +x ./*.sh
 ```
@@ -111,3 +111,18 @@ sudo ./spark_setup.sh
 ```
 2. Далее необходимо ввести имя пользователя, созданного в [ПЗ№1, п.2](https://github.com/MaxAndreyko/hadoop_cluster/tree/main?tab=readme-ov-file#ii-%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D1%8F-%D0%BF%D0%BE-ssh).
 3. При успешном выполнении всех команд скрипта в терминале должно отобразиться `"Завершение автоматической установки spark и получение результирующего набора данных."`.
+
+## ПЗ №5 - Обработка данных под управлением Prefect
+### I. Подготовка к запуску скриптов
+Переходим в папку со скриптами `hadoop_cluster/scripts/task5` к ПЗ №5 и делаем их исполняемыми:
+```bash
+cd ~/hadoop_cluster/scripts/task5 && chmod +x ./*.sh
+```
+### II. Установка Prefect и обработка данных
+1. Для установки spark запускаем скрипт `prefect.sh`:
+```bash
+sudo ./prefect.sh
+```
+2. Далее необходимо ввести имя пользователя, созданного в [ПЗ№1, п.2](https://github.com/MaxAndreyko/hadoop_cluster/tree/main?tab=readme-ov-file#ii-%D1%81%D0%BE%D0%B7%D0%B4%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BF%D0%BE%D0%B4%D0%BA%D0%BB%D1%8E%D1%87%D0%B5%D0%BD%D0%B8%D1%8F-%D0%BF%D0%BE-ssh).
+3. При успешном выполнении всех команд скрипта в терминале должно отобразиться `"Завершение автоматической установки prefect и получение результирующего набора данных под его управлением."`.
+
