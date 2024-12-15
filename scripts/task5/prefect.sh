@@ -42,9 +42,9 @@ HADOOP_HOME=$(sudo -u "$SSH_USER" bash -c "source ~/.profile; echo \$HADOOP_HOME
 HDFS="$HADOOP_HOME/bin/hdfs"
 CSV_PATH="/input/ufo_sightings.csv"
 if sudo -u $SSH_USER ssh "$SSH_USER@team-4-nn" "$HDFS dfs -test -f $CSV_PATH"; then
-    echo "CSV файл с данными $CSV_PATH уже существует."
+    print_header "CSV файл с данными $CSV_PATH уже существует."
 else
-    echo "CSV файл с данными $CSV_PATH не существует. Добавление файла ..."
+    print_header "CSV файл с данными $CSV_PATH не существует. Добавление файла ..."
     sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" "$HDFS dfs -put /home/$SSH_USER/ $CSV_PATH" || error_exit "Не удалось загрузить данные в HDFS."
 fi
 check_success
