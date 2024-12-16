@@ -24,6 +24,8 @@ print_header() {
 read -p "Введите имя пользователя для подключения: " SSH_USER
 echo
 
+SSH_USER_HOME=/home/$SSH_USER
+
 # Ссылка на дистрибутив Spark
 SPARK_URL="https://dlcdn.apache.org/spark/spark-3.5.3/spark-3.5.3-bin-hadoop3.tgz"
 SPARK_TGZ="spark-3.5.3-bin-hadoop3.tgz"
@@ -140,64 +142,9 @@ check_success
 
 # Создание исполняемого Python файла на NameNode
 print_header "Создание Python файла на NameNode..."
-sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" <<EOF
-cat <<PYTHON_SCRIPT > ~/run_spark_job.py
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
-
-# Создание SparkSession с поддержкой YARN и Hive
-spark = SparkSession.builder \\
-    .master("yarn") \\
-    .appName("spark-with-yarn") \\
-    .config("spark.sql.warehouse.dir", "/user/hive/warehouse") \\
-    .config("spark.hadoop.hive.metastore.uris", "thrift://team-4-jn:9083") \\
-    .enableHiveSupport() \\
-    .getOrCreate()
-
-# Загрузка исходного CSV-файла в DataFrame
-df = spark.read.csv(
-    "/input/ufo_sightings.csv",
-    header=True,
-    inferSchema=True
-)
-
-# Преобразование даты и добавление столбца "year" для уменьшения числа партиций
-df = df.withColumn("year", F.year(F.to_date(F.col("date"), "MM/yyyy")))
-
-# Применение агрегирующих и трансформирующих функций
-df_transformed = df.groupBy("year").agg(
-    F.max("date").alias("max_date"),
-    F.min("date").alias("min_date"),
-    F.countDistinct("city").alias("unique_cities"),
-    F.countDistinct("shape").alias("unique_shapes"),
-    F.expr("percentile_approx(month_count, 0.5)").alias("median_month_count"),
-    F.avg(F.datediff(
-        F.to_date("report_date", "MM/dd/yyyy"),
-        F.to_date("posted_date", "MM/dd/yyyy")
-    )).alias("avg_days_diff")
-)
-
-print("Вывод преобразованных данных")
-# Вывод преобразованных данных
-df_transformed.show()
-
-# Сохранение результирующего набора данных в CSV с партиционированием
-output_path = "/input/dataset_transformed"
-df_transformed.write \\
-    .partitionBy("year") \\
-    .mode("overwrite") \\
-    .format("csv") \\
-    .save(output_path)
-
-# Сохранение данных в Hive как партиционированную таблицу
-df_transformed.write \\
-    .partitionBy("year") \\
-    .mode("overwrite") \\
-    .saveAsTable("test.ufo_analysis_table")
-PYTHON_SCRIPT
-EOF
+cp ./run_spark_job.py $SSH_USER_HOME
+sudo -u "$SSH_USER" scp $SSH_USER_HOME/run_spark_job.py $SSH_USER@team-4-nn:$SSH_USER_HOME
 check_success
-SSH_USER_HOME=/home/$SSH_USER
 sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" << EOF
 source $SSH_USER_HOME/.venv/bin/activate
 python3 $SSH_USER_HOME/run_spark_job.py
