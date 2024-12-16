@@ -55,8 +55,7 @@ sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" <<EOF
     if [[ -d "$SPARK_DIR" ]]; then
         echo -e "\e[33mДиректория $SPARK_DIR уже существует. Пропускаем распаковку.\e[0m"
     else
-        tar -xzf "/home/$SSH_USER/$SPARK_TGZ" -C "/home/$SSH_USER" || error_exit "Не удалось распаковать архив"
-        check_success
+        tar -xzf "/home/$SSH_USER/$SPARK_TGZ" -C "/home/$SSH_USER"
     fi
 EOF
 
@@ -114,14 +113,13 @@ sudo -u "$SSH_USER" ssh "$SSH_USER@team-4-nn" <<EOF
     cd ~
     source ~/.profile
     if [ ! -d ".venv" ]; then
-        python3 -m venv .venv || error_exit "Не удалось создать виртуальное окружение"
+        python3 -m venv .venv
     else
         echo "Виртуальное окружение уже существует, пропускаем создание."
     fi
-    source .venv/bin/activate || error_exit "Не удалось активировать окружение"
-    check_success
+    source .venv/bin/activate
     if ! pip list | grep -q pyspark; then
-        pip install pyspark || error_exit "Не удалось установить pyspark"
+        pip install pyspark
     else
         echo "pyspark уже установлен, пропускаем установку."
     fi
